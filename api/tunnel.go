@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	connectip "github.com/Diniboy1123/connect-ip-go"
 	"github.com/Diniboy1123/usque/internal"
 	"github.com/songgao/water"
 	"golang.zx2c4.com/wireguard/tun"
@@ -231,26 +230,45 @@ func MaintainTunnel(ctx context.Context, cfg MaintainTunnelConfig) {
 	}
 
 	packetBufferPool := NewNetBuffer(cfg.MTU + datagramContextIDHeadroom)
+	packetBufferChan := make(chan []byte, 1)
+	go func() {
+		for {
+			if ctx.Err() != nil {
+				return
+			}
+			buf := packetBufferPool.Get()
+			n, err := cfg.Device.ReadPacket(buf[datagramContextIDHeadroom:])
+			if err != nil {
+				packetBufferPool.Put(buf)
+				log.Printf("Failed to read from TUN device: %v", err)
+				if sleepErr := sleepCtx(ctx, cfg.ReconnectDelay); sleepErr != nil {
+					return
+				}
+				continue
+			}
+			select {
+			case <-ctx.Done():
+				packetBufferPool.Put(buf)
+				return
+			case packetBufferChan <- buf[:n]:
+			}
+		}
+	}()
 
 	for {
 		if ctx.Err() != nil {
 			return
 		}
 
+		var packet []byte
 		if !cfg.AlwaysReconnect {
 			log.Println("Tunnel idle. Waiting for outbound activity before reconnecting...")
-			buf := packetBufferPool.Get()
-			n, err := cfg.Device.ReadPacket(buf[datagramContextIDHeadroom:])
-			if err != nil {
-				packetBufferPool.Put(buf)
-				log.Printf("Failed to read from TUN device while waiting for activity: %v", err)
-				if sleepErr := sleepCtx(ctx, cfg.ReconnectDelay); sleepErr != nil {
-					return
-				}
-				continue
+			select {
+			case <-ctx.Done():
+				return
+			case packet = <-packetBufferChan:
+				log.Printf("Detected outbound activity (%d bytes). Reconnecting...", len(packet))
 			}
-			packetBufferPool.Put(buf)
-			log.Printf("Detected outbound activity (%d bytes). Reconnecting...", n)
 		}
 
 		log.Printf("Establishing MASQUE connection to %s", cfg.Endpoint)
@@ -305,44 +323,36 @@ func MaintainTunnel(ctx context.Context, cfg MaintainTunnelConfig) {
 		errChan := make(chan error, 2)
 		pumpCtx, cancelPumps := context.WithCancel(ctx)
 		var wg sync.WaitGroup
-		var readMu sync.Mutex
 
 		wg.Add(2)
 
-		go func() {
+		go func(packet []byte) {
 			defer wg.Done()
 			for {
-				if pumpCtx.Err() != nil {
-					return
+				if len(packet) == 0 {
+					select {
+					case <-pumpCtx.Done():
+						return
+					case packet = <-packetBufferChan:
+					}
 				}
-				buf := packetBufferPool.Get()
-				readMu.Lock()
-				n, err := cfg.Device.ReadPacket(buf[datagramContextIDHeadroom:])
-				readMu.Unlock()
+				n := len(packet)
+				packet = packet[:cap(packet)]
+				icmp, err := ipConn.WritePacketBuffer(packet, datagramContextIDHeadroom, n)
+				packetBufferPool.Put(packet)
+				packet = nil
 				if err != nil {
-					packetBufferPool.Put(buf)
-					errChan <- fmt.Errorf("failed to read from TUN device: %w", err)
-					return
-				}
-				if pumpCtx.Err() != nil {
-					packetBufferPool.Put(buf)
-					return
-				}
-				icmp, err := ipConn.WritePacketBuffer(buf, datagramContextIDHeadroom, n)
-				if err != nil {
-					packetBufferPool.Put(buf)
-					if errors.As(err, new(*connectip.CloseError)) {
+					if errors.Is(err, net.ErrClosed) {
 						errChan <- fmt.Errorf("connection closed while writing to IP connection: %w", err)
 						return
 					}
 					log.Printf("Error writing to IP connection: %v, continuing...", err)
 					continue
 				}
-				packetBufferPool.Put(buf)
 
 				if len(icmp) > 0 {
 					if err := cfg.Device.WritePacket(icmp); err != nil {
-						if errors.As(err, new(*connectip.CloseError)) {
+						if errors.Is(err, net.ErrClosed) {
 							errChan <- fmt.Errorf("connection closed while writing ICMP to TUN device: %w", err)
 							return
 						}
@@ -350,7 +360,7 @@ func MaintainTunnel(ctx context.Context, cfg MaintainTunnelConfig) {
 					}
 				}
 			}
-		}()
+		}(packet)
 
 		go func() {
 			defer wg.Done()
@@ -361,7 +371,7 @@ func MaintainTunnel(ctx context.Context, cfg MaintainTunnelConfig) {
 						errChan <- fmt.Errorf("connection closed while reading from IP connection: %w", err)
 						return
 					}
-					if errors.As(err, new(*connectip.CloseError)) {
+					if errors.Is(err, net.ErrClosed) {
 						errChan <- fmt.Errorf("connection closed while reading from IP connection: %w", err)
 						return
 					}
