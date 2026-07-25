@@ -13,6 +13,7 @@ import (
 
 	"github.com/txthinking/runnergroup"
 	"github.com/txthinking/socks5"
+	"golang.org/x/sync/singleflight"
 	"golang.zx2c4.com/wireguard/tun/netstack"
 )
 
@@ -396,22 +397,49 @@ func (s *SOCKS5Server) relayTCP(a, b net.Conn, timeout time.Duration) {
 	wg.Wait()
 }
 
+var claimPendingUDPAssociationG singleflight.Group
+
 // UDPHandle is like txthinking DefaultHandle.UDPHandle but does not use srv.UDPSrc.
 func (s *SOCKS5Server) UDPHandle(srv *socks5.Server, addr *net.UDPAddr, d *socks5.Datagram) error {
 	src := addr.String()
 	var associatedClosed <-chan byte
 	if srv.LimitUDP {
-		any, ok := srv.AssociatedUDP.Get(src)
+		cache, ok := srv.AssociatedUDP.Get(src)
 		if !ok {
-			assoc, claimed := s.claimPendingUDPAssociation(addr)
-			if !claimed {
-				return fmt.Errorf("udp address %s is not associated with tcp", src)
+			v, err, _ := claimPendingUDPAssociationG.Do(src, func() (any, error) {
+				sourceIP := addr.IP.String()
+				s.udpAssociationMutex.Lock()
+				defer s.udpAssociationMutex.Unlock()
+				pending, ok := s.pendingUDP[sourceIP]
+				if ok {
+					for len(pending) > 0 {
+						assoc := pending[0]
+						pending = pending[1:]
+						select {
+						case <-assoc.ch:
+							continue
+						default:
+							if len(pending) == 0 {
+								delete(s.pendingUDP, sourceIP)
+							} else {
+								s.pendingUDP[sourceIP] = pending
+							}
+							assoc.setSource(src)
+							srv.AssociatedUDP.Set(src, assoc, -1)
+							return assoc.ch, nil
+						}
+					}
+					delete(s.pendingUDP, sourceIP)
+				}
+				return nil, fmt.Errorf("udp address %s is not associated with tcp", src)
+			})
+			if err != nil {
+				return err
+			} else {
+				associatedClosed = v.(chan byte)
 			}
-			assoc.setSource(src)
-			srv.AssociatedUDP.Set(src, assoc, -1)
-			associatedClosed = assoc.ch
 		} else {
-			assoc, ok := any.(*udpAssociation)
+			assoc, ok := cache.(*udpAssociation)
 			if !ok {
 				return fmt.Errorf("udp address %s has invalid association state", src)
 			}
@@ -421,7 +449,7 @@ func (s *SOCKS5Server) UDPHandle(srv *socks5.Server, addr *net.UDPAddr, d *socks
 	send := func(ue *socks5.UDPExchange, data []byte) error {
 		select {
 		case <-associatedClosed:
-			return fmt.Errorf("udp address %s is not associated with tcp", src)
+			return fmt.Errorf("udp address %s is associated with closed tcp", src)
 		default:
 			_, err := ue.RemoteConn.Write(data)
 			return err
@@ -561,28 +589,4 @@ func (s *SOCKS5Server) removePendingUDPAssociation(sourceIP string, assoc *udpAs
 		return
 	}
 	s.pendingUDP[sourceIP] = pending
-}
-
-func (s *SOCKS5Server) claimPendingUDPAssociation(addr *net.UDPAddr) (*udpAssociation, bool) {
-	sourceIP := addr.IP.String()
-	s.udpAssociationMutex.Lock()
-	defer s.udpAssociationMutex.Unlock()
-	pending := s.pendingUDP[sourceIP]
-	for len(pending) > 0 {
-		assoc := pending[0]
-		pending = pending[1:]
-		select {
-		case <-assoc.ch:
-			continue
-		default:
-			if len(pending) == 0 {
-				delete(s.pendingUDP, sourceIP)
-			} else {
-				s.pendingUDP[sourceIP] = pending
-			}
-			return assoc, true
-		}
-	}
-	delete(s.pendingUDP, sourceIP)
-	return nil, false
 }
