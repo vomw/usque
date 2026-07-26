@@ -406,7 +406,7 @@ func (s *SOCKS5Server) UDPHandle(srv *socks5.Server, addr *net.UDPAddr, d *socks
 	if srv.LimitUDP {
 		cache, ok := srv.AssociatedUDP.Get(src)
 		if !ok {
-			v, err, _ := claimPendingUDPAssociationG.Do(src, func() (any, error) {
+			v, err, shared := claimPendingUDPAssociationG.Do(src, func() (any, error) {
 				sourceIP := addr.IP.String()
 				s.udpAssociationMutex.Lock()
 				defer s.udpAssociationMutex.Unlock()
@@ -434,11 +434,19 @@ func (s *SOCKS5Server) UDPHandle(srv *socks5.Server, addr *net.UDPAddr, d *socks
 				return nil, fmt.Errorf("udp address %s is not associated with tcp", src)
 			})
 			if err != nil {
-				return err
+				if shared {
+					return err
+				} else // last try, maybe another goroutine associated it
+				if cache, ok = srv.AssociatedUDP.Get(src); !ok {
+					return err
+				} else {
+					log.Printf("udp address %s was associated with tcp by another goroutine", src)
+				}
 			} else {
 				associatedClosed = v.(chan byte)
 			}
-		} else {
+		}
+		if ok {
 			assoc, ok := cache.(*udpAssociation)
 			if !ok {
 				return fmt.Errorf("udp address %s has invalid association state", src)
