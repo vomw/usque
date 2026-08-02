@@ -101,13 +101,23 @@ var enrollCmd = &cobra.Command{
 			h2v4 = config.DefaultEndpointH2V4
 		}
 
+		if len(accountData.Config.Peers) == 0 {
+			log.Fatalf("Enrollment response did not include any peer endpoints")
+		}
+
+		ep4, _, err := parseEndpointAddress(accountData.Config.Peers[0].Endpoint.V4)
+		if err != nil {
+			log.Fatalf("Failed to parse enrollment endpoint v4: %v", err)
+		}
+		_, ep6, err := parseEndpointAddress(accountData.Config.Peers[0].Endpoint.V6)
+		if err != nil {
+			log.Fatalf("Failed to parse enrollment endpoint v6: %v", err)
+		}
+
 		config.AppConfig = config.Config{
 			PrivateKey: base64.StdEncoding.EncodeToString(privKeyBytes),
-			// TODO: proper endpoint parsing in utils
-			// strip :0
-			EndpointV4: accountData.Config.Peers[0].Endpoint.V4[:len(accountData.Config.Peers[0].Endpoint.V4)-2],
-			// strip [ from beginning and ]:0 from end
-			EndpointV6:     accountData.Config.Peers[0].Endpoint.V6[1 : len(accountData.Config.Peers[0].Endpoint.V6)-3],
+			EndpointV4: ep4,
+			EndpointV6: ep6,
 			EndpointH2V4:   h2v4,
 			EndpointH2V6:   config.AppConfig.EndpointH2V6,
 			EndpointPubKey: accountData.Config.Peers[0].PublicKey,

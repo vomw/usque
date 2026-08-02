@@ -43,7 +43,8 @@ func PrepareTlsConfig(privKey *ecdsa.PrivateKey, peerPubKey *ecdsa.PublicKey, ce
 		ServerName: sni,
 		NextProtos: []string{http3.NextProtoH3},
 		// WARN: SNI is usually not for the endpoint, so we must skip verification
-		InsecureSkipVerify: true,
+		// only when the caller explicitly opts in to insecure mode.
+		InsecureSkipVerify: insecure,
 		// To avoid the Hello Retry Requests you would uncomment this, but I prefer to keep Go defaults, maybe
 		// Cloudflare adds support for more curves in the future and I don't want to hardcode it here
 		// NOTE: If I add more than one, Go will still use one share it picks and it was never P-256 for me
@@ -64,6 +65,10 @@ func PrepareTlsConfig(privKey *ecdsa.PrivateKey, peerPubKey *ecdsa.PublicKey, ce
 			cert, err := x509.ParseCertificate(rawCerts[0])
 			if err != nil {
 				return err
+			}
+
+			if peerPubKey == nil {
+				return fmt.Errorf("missing peer public key")
 			}
 
 			if _, ok := cert.PublicKey.(*ecdsa.PublicKey); !ok {
