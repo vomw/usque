@@ -29,16 +29,10 @@ jobs:
       - name: Run GoReleaser
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          BRANCH_NAME="${GITHUB_REF##*/}"
+        run: goreleaser release --clean --snapshot
 
-          if [ "$BRANCH_NAME" = "tests" ]; then
-            echo "Skipping release on tests branch."
-            exit 0
-          fi
-
-          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            goreleaser release --clean --snapshot
-          else
-            goreleaser release --clean
-          fi
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: usque-release-artifacts
+          path: dist/**
