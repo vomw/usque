@@ -1,10 +1,7 @@
 name: Build and Release
 
 on:
-  push:
-    tags:
-      - 'v*'
-  workflow_dispatch:  # Allows manual triggering
+  workflow_dispatch:  # Manual trigger only
 
 jobs:
   release:
@@ -32,4 +29,16 @@ jobs:
       - name: Run GoReleaser
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: goreleaser release --clean
+        run: |
+          BRANCH_NAME="${GITHUB_REF##*/}"
+
+          if [ "$BRANCH_NAME" = "tests" ]; then
+            echo "Skipping release on tests branch."
+            exit 0
+          fi
+
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            goreleaser release --clean --snapshot
+          else
+            goreleaser release --clean
+          fi
