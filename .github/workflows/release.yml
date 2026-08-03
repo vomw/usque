@@ -26,10 +26,20 @@ jobs:
           curl -sL https://github.com/goreleaser/goreleaser/releases/latest/download/goreleaser_Linux_x86_64.tar.gz | tar xz -C /tmp
           sudo mv /tmp/goreleaser /usr/local/bin/
 
+      - name: Create release tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          TAG="v0.0.0-${GITHUB_RUN_ID}"
+          git tag -a "$TAG" -m "CI auto release $TAG"
+          git push origin "$TAG"
+
       - name: Run GoReleaser
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: goreleaser release --clean --snapshot
+        run: goreleaser release --clean
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
