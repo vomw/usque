@@ -1,7 +1,8 @@
+//go:build linux
+
 package internal
 
 import (
-	"runtime"
 	"syscall"
 )
 
@@ -10,10 +11,6 @@ import (
 // This is best-effort and keeps the application functional on systems without the
 // required kernel support.
 func EnableSpeculationMitigation() {
-	if runtime.GOOS != "linux" {
-		return
-	}
-
 	// PR_SET_SPECULATION_CTRL is defined as 53 for Linux x86_64 and arm64.
 	// The flag PR_SPEC_DISABLE is 4.
 	// We deliberately avoid hard-failing if the kernel or syscall is unavailable.
