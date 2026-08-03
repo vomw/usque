@@ -86,13 +86,23 @@ var registerCmd = &cobra.Command{
 
 		log.Printf("Successful registration. Saving config...")
 
+		if len(updatedAccountData.Config.Peers) == 0 {
+			log.Fatalf("Registration response did not include any peer endpoints")
+		}
+
+		ep4, _, err := parseEndpointAddress(updatedAccountData.Config.Peers[0].Endpoint.V4)
+		if err != nil {
+			log.Fatalf("Failed to parse registration endpoint v4: %v", err)
+		}
+		_, ep6, err := parseEndpointAddress(updatedAccountData.Config.Peers[0].Endpoint.V6)
+		if err != nil {
+			log.Fatalf("Failed to parse registration endpoint v6: %v", err)
+		}
+
 		config.AppConfig = config.Config{
 			PrivateKey: base64.StdEncoding.EncodeToString(privKey),
-			// TODO: proper endpoint parsing in utils
-			// strip :0
-			EndpointV4: updatedAccountData.Config.Peers[0].Endpoint.V4[:len(updatedAccountData.Config.Peers[0].Endpoint.V4)-2],
-			// strip [ from beginning and ]:0 from end
-			EndpointV6:     updatedAccountData.Config.Peers[0].Endpoint.V6[1 : len(updatedAccountData.Config.Peers[0].Endpoint.V6)-3],
+			EndpointV4: ep4,
+			EndpointV6: ep6,
 			EndpointH2V4:   config.DefaultEndpointH2V4,
 			EndpointH2V6:   config.DefaultEndpointH2V6,
 			EndpointPubKey: updatedAccountData.Config.Peers[0].PublicKey,

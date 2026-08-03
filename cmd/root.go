@@ -28,6 +28,7 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() error {
+	internal.EnableSpeculationMitigationForCurrentThread()
 	return rootCmd.Execute()
 }
 
