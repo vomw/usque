@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // Config represents the application configuration structure, containing essential details such as keys, endpoints, and access tokens.
@@ -62,6 +63,10 @@ func LoadConfig(configPath string) error {
 // Returns:
 //   - error: An error if the configuration file cannot be written.
 func (*Config) SaveConfig(configPath string) error {
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		return fmt.Errorf("failed to create config directory: %v", err)
+	}
+
 	file, err := os.Create(configPath)
 	if err != nil {
 		return fmt.Errorf("failed to create config file: %v", err)

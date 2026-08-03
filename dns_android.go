@@ -1,5 +1,5 @@
-//go:build android && !cgo
-// +build android,!cgo
+//go:build android
+// +build android
 
 package main
 
