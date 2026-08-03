@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	internal.EnableSpeculationMitigation()
+	internal.EnableSpeculationMitigationForCurrentThread()
 	if err := cmd.Execute(); err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)

@@ -2,5 +2,10 @@
 
 package internal
 
-// EnableSpeculationMitigation is a no-op on non-Linux systems.
-func EnableSpeculationMitigation() {}
+// EnableSpeculationMitigationForCurrentThread is a no-op on non-Linux systems.
+func EnableSpeculationMitigationForCurrentThread() {}
+
+// EnableSpeculationMitigation is a compatibility wrapper for non-Linux systems.
+func EnableSpeculationMitigation() {
+	EnableSpeculationMitigationForCurrentThread()
+}
