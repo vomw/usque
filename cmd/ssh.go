@@ -114,6 +114,16 @@ var sshCmd = &cobra.Command{
 		}
 
 		password, _ := cmd.Flags().GetString("password")
+		if password == "" {
+			fmt.Fprintf(os.Stderr, "SSH password for %s@%s: ", user, host)
+			pwBytes, err := term.ReadPassword(int(syscall.Stdin))
+			if err != nil {
+				cmd.Printf("Failed to read password: %v\n", err)
+				return
+			}
+			password = string(pwBytes)
+			fmt.Fprintln(os.Stderr)
+		}
 
 		sni, err := cmd.Flags().GetString("sni-address")
 		if err != nil {

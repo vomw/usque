@@ -286,6 +286,99 @@ $ ./usque ssh root@100.64.0.2 -w mypassword
 > ssh -o ProxyCommand="nc -X 5 -x 127.0.0.1:1080 %h %p" root@100.64.0.2
 > ```
 
+### SCP Mode (file transfer through the tunnel)
+
+If you want to copy files to or from a host reachable through the tunnel, `usque scp` implements the standard SCP protocol on top of SSH. The syntax mirrors `scp` (and `scp -r` for directories):
+
+```shell
+# Upload a single file into a remote directory
+$ ./usque scp -w mypassword ./local.txt user@100.64.0.2:/remote/dir/
+
+# Upload multiple files into a remote directory
+$ ./usque scp -w mypassword ./a.txt ./b.txt user@100.64.0.2:/remote/dir/
+
+# Upload a directory recursively
+$ ./usque scp -w mypassword -r ./localdir user@100.64.0.2:/remote/dir/
+
+# Download a file from the remote
+$ ./usque scp -w mypassword user@100.64.0.2:/remote/file.txt ./local.txt
+
+# Download a directory recursively
+$ ./usque scp -w mypassword -r user@100.64.0.2:/remote/dir ./localdir
+```
+
+Remote paths may use either POSIX form (`/home/user/file.txt`) or Windows
+drive-letter form (`e:/github/test/file.txt`, `C:\Users\me\file.txt`).
+When uploading to a Windows path, `usque scp` routes the underlying
+`scp -t` invocation through `cmd /c` and the Windows-native
+`C:\Windows\System32\OpenSSH\scp.exe` to work around long-standing
+compatibility issues between mingw shim `scp` and Windows OpenSSH
+(paths reported as "ambiguous target" or false "No such file or
+directory" errors). Uploads first land as a temporary
+`<filename>.usque_tmp` file in the target directory and are then
+atomically renamed into place via PowerShell, so an interrupted upload
+will not leave a half-written file at the final destination.
+
+> [!NOTE]
+> `usque scp` is built on top of the same userspace TCP/IP stack as
+> `usque ssh` and shares the same caveats. The remote host must have
+> the OpenSSH `scp` binary in its `PATH` (Windows 10/11 includes
+> `C:\Windows\System32\OpenSSH\scp.exe` by default; on Linux this is
+> the `openssh-client` package). File wildcards (`*.txt`) are expanded
+> locally on the calling host only, matching OpenSSH `scp` behaviour.
+
+### SFTP Mode (file transfer through the tunnel, recommended)
+
+`usque sftp` is a more reliable alternative to `usque scp` for copying
+files through the tunnel. It uses the SSH File Transfer Protocol (SFTP)
+over the SSH connection rather than shelling out to a remote `scp`
+binary. The syntax is identical to `usque scp`:
+
+```shell
+# Upload a single file into a remote directory
+$ ./usque sftp -w mypassword ./local.txt user@100.64.0.2:/remote/dir/
+
+# Upload multiple files into a remote directory
+$ ./usque sftp -w mypassword ./a.txt ./b.txt user@100.64.0.2:/remote/dir/
+
+# Upload a directory recursively
+$ ./usque sftp -w mypassword -r ./localdir user@100.64.0.2:/remote/dir/
+
+# Download a file from the remote
+$ ./usque sftp -w mypassword user@100.64.0.2:/remote/file.txt ./local.txt
+
+# Download a directory recursively
+$ ./usque sftp -w mypassword -r user@100.64.0.2:/remote/dir ./localdir
+```
+
+Why prefer SFTP over SCP?
+
+- **Cross-platform Windows paths**: `e:/github/test/file.txt` and
+  `C:\Users\me\file.txt` work without any PowerShell, mingw shim, or
+  Windows-native `scp.exe` workaround. SFTP runs entirely over the
+  SSH channel; the remote `sftp-server` subsystem handles the path
+  translation.
+- **No remote binary required**: the only remote component is
+  `sftp-server`, which is enabled by default on OpenSSH, Windows
+  OpenSSH, and dropbear.
+- **Atomic writes**: each upload goes to a temporary
+  `<filename>.usque_tmp` file in the target directory and is then
+  renamed into place via the SFTP `RENAME` primitive, so an
+  interrupted upload never leaves a half-written file at the final
+  destination. Overwrites work via `REMOVE` + `RENAME`.
+- **Smaller attack surface**: the SFTP client is a Go library
+  (`github.com/pkg/sftp`) speaking the protocol over the existing
+  tunnel; no child process or remote command parsing is involved.
+
+> [!NOTE]
+> `usque sftp` is built on top of the same userspace TCP/IP stack as
+> `usque ssh` and shares the same caveats. The remote host must have
+> the SSH File Transfer Protocol subsystem enabled (`sftp-server`,
+> which is the default on OpenSSH, Windows OpenSSH, and dropbear).
+> File wildcards (`*.txt`) are expanded locally on the calling host
+> only, matching OpenSSH `scp` behaviour.
+
+
 ### SOCKS5 Proxy Mode (easy, cross-platform)
 
 If you just want to expose the tunnel as a quickly deployable proxy and your client supports SOCKS5, this mode is for you. It **supports both IPv4 and IPv6**. **TCP and UDP** even! It is also **cross-platform** and doesn't require any special kernel modules or root privileges. However it emulates an entire user-space network stack, so it can be resource hungry.
