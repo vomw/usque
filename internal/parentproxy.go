@@ -47,9 +47,10 @@ func (p *ParentProxy) ListenPacket(ctx context.Context, network string, laddr *n
 	relay, err := p.handshake(control, 3, "0.0.0.0:0")
 	if err != nil { _ = control.Close(); return nil, err }
 	if relay.IP.IsUnspecified() { relay.IP = control.RemoteAddr().(*net.TCPAddr).IP }
-	udp, err := net.ListenUDP(network, laddr)
+	// DialUDP returns a connected UDP socket on every supported Go version,
+	// including the older toolchains used by the release workflow.
+	udp, err := net.DialUDP(network, laddr, relay)
 	if err != nil { _ = control.Close(); return nil, err }
-	if err := udp.Connect(relay); err != nil { _ = udp.Close(); _ = control.Close(); return nil, err }
 	return &socksUDPConn{UDPConn: udp, control: control}, nil
 }
 
