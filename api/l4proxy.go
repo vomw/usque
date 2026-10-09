@@ -13,6 +13,8 @@ import (
 
 	quic "github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
+	"github.com/Diniboy1123/usque/config"
+	"github.com/Diniboy1123/usque/internal"
 )
 
 const (
@@ -55,7 +57,7 @@ type L4Proxy struct {
 }
 
 type l4HTTP3Client struct {
-	udpConn    *net.UDPConn
+	udpConn    net.PacketConn
 	quicConn   *quic.Conn
 	clientConn *http3.ClientConn
 }
@@ -282,14 +284,16 @@ func (p *L4Proxy) closeClientConnIfCurrent(expected *l4HTTP3Client) {
 	closeL4HTTP3(expected.udpConn, expected.quicConn)
 }
 
-func listenUDPForEndpoint(endpoint *net.UDPAddr) (*net.UDPConn, error) {
+func listenUDPForEndpoint(endpoint *net.UDPAddr) (net.PacketConn, error) {
+	parent, err := internal.NewParentProxy(config.AppConfig.ParentProxy)
+	if err != nil { return nil, err }
 	if endpoint.IP.To4() == nil {
-		return net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv6zero})
+		return parent.ListenPacket(context.Background(), "udp", &net.UDPAddr{IP: net.IPv6zero})
 	}
-	return net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4zero})
+	return parent.ListenPacket(context.Background(), "udp", &net.UDPAddr{IP: net.IPv4zero})
 }
 
-func closeL4HTTP3(udpConn *net.UDPConn, quicConn *quic.Conn) {
+func closeL4HTTP3(udpConn net.PacketConn, quicConn *quic.Conn) {
 	if quicConn != nil {
 		_ = quicConn.CloseWithError(0, "")
 	}

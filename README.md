@@ -467,6 +467,7 @@ Example config:
   "endpoint_v6": "2606:4700:103::",
   "endpoint_h2_v4": "162.159.198.2",
   "endpoint_h2_v6": "",
+  "parent_proxy": "",
   "endpoint_pub_key": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEIaU7MToJm9NKp8YfGxR6r+/h4mcG\n7SxI8tsW8OR1A5tv/zCzVbCRRh2t87/kxnP6lAy0lkr7qYwu+ox+k3dr6w==\n-----END PUBLIC KEY-----\n",
   "license": "A...redacted...Z",
   "id": "00000000-0000-0000-0000-000000000000",
@@ -483,6 +484,7 @@ Example config:
 - `endpoint_v6`: IPv6 address of the Cloudflare WARP endpoint. **Public.** Used for connecting to the WARP network.
 - `endpoint_h2_v4`: IPv4 address used by `--http2`. Defaults to `162.159.198.2` when empty. **Public.**
 - `endpoint_h2_v6`: IPv6 address used by `--http2`. Empty by default and must be set manually for HTTP/2 over IPv6. **Public.**
+- `parent_proxy`: Optional parent SOCKS proxy for all outbound usque traffic. Use `socks5://host:port` to resolve target names locally, or `socks5h://host:port` to resolve them at the SOCKS server. Optional URL userinfo supplies SOCKS username/password. HTTP/3 uses SOCKS5 UDP ASSOCIATE; a parent must support it. This works on Windows 10 without platform-specific setup.
 - `endpoint_pub_key`: Base64 encoded ECDSA public key on the NIST P-256 curve in PEM format. **Public.** This is used to ensure that we are indeed talking to the Cloudflare WARP endpoint and not being [MiTM](https://en.wikipedia.org/wiki/Man-in-the-middle_attack)'d.
 - `license`: License returned by the server for our account. **Confidential.** With this, you can pair multiple devices to the same account.
 - `id`: Device ID given by the server to us. **Public.** This is used for device identification and API calls.

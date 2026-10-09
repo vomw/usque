@@ -97,6 +97,7 @@ var enrollCmd = &cobra.Command{
 		log.Printf("Successful registration. Saving config...")
 
 		h2v4 := config.AppConfig.EndpointH2V4
+		parentProxy := config.AppConfig.ParentProxy
 		if h2v4 == "" {
 			h2v4 = config.DefaultEndpointH2V4
 		}
@@ -115,6 +116,7 @@ var enrollCmd = &cobra.Command{
 			AccessToken:    config.AppConfig.AccessToken,
 			IPv4:           accountData.Config.Interface.Addresses.V4,
 			IPv6:           accountData.Config.Interface.Addresses.V6,
+			ParentProxy:    parentProxy,
 		}
 
 		if err := config.AppConfig.SaveConfig(configPath); err != nil {

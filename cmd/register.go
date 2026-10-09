@@ -85,6 +85,7 @@ var registerCmd = &cobra.Command{
 		}
 
 		log.Printf("Successful registration. Saving config...")
+		parentProxy := config.AppConfig.ParentProxy
 
 		config.AppConfig = config.Config{
 			PrivateKey: base64.StdEncoding.EncodeToString(privKey),
@@ -100,6 +101,7 @@ var registerCmd = &cobra.Command{
 			AccessToken:    accountData.Token,
 			IPv4:           updatedAccountData.Config.Interface.Addresses.V4,
 			IPv6:           updatedAccountData.Config.Interface.Addresses.V6,
+			ParentProxy:    parentProxy,
 		}
 
 		if err := config.AppConfig.SaveConfig(configPath); err != nil {

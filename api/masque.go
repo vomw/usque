@@ -15,6 +15,8 @@ import (
 	connectip "github.com/Diniboy1123/connect-ip-go"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
+	"github.com/Diniboy1123/usque/config"
+	"github.com/Diniboy1123/usque/internal"
 	"github.com/yosida95/uritemplate/v3"
 	"golang.org/x/net/http2"
 )
@@ -101,12 +103,12 @@ func PrepareTlsConfig(privKey *ecdsa.PrivateKey, peerPubKey *ecdsa.PublicKey, ce
 //   - useHTTP2: bool - When true, connect over TCP+TLS/HTTP2 instead of QUIC/HTTP3.
 //
 // Returns:
-//   - *net.UDPConn: The UDP connection used for the QUIC session (nil in HTTP/2 mode).
+//   - net.PacketConn: The UDP connection used for the QUIC session (nil in HTTP/2 mode).
 //   - *http3.Transport: The HTTP/3 transport (nil in HTTP/2 mode).
 //   - *connectip.Conn: The Connect-IP connection instance.
 //   - *http.Response: The response from the Connect-IP handshake.
 //   - error: An error if the connection setup fails.
-func ConnectTunnel(ctx context.Context, tlsConfig *tls.Config, quicConfig *quic.Config, connectUri string, endpoint net.Addr, useHTTP2 bool) (*net.UDPConn, *http3.Transport, *connectip.Conn, *http.Response, error) {
+func ConnectTunnel(ctx context.Context, tlsConfig *tls.Config, quicConfig *quic.Config, connectUri string, endpoint net.Addr, useHTTP2 bool) (net.PacketConn, *http3.Transport, *connectip.Conn, *http.Response, error) {
 	template := uritemplate.MustNew(connectUri)
 	additionalHeaders := http.Header{
 		"User-Agent": []string{""},
@@ -160,16 +162,18 @@ func ConnectTunnel(ctx context.Context, tlsConfig *tls.Config, quicConfig *quic.
 	return nil, nil, nil, nil, fmt.Errorf("failed to dial connect-ip: %w", lastErr)
 }
 
-func connectTunnelHTTP3(ctx context.Context, tlsConfig *tls.Config, quicConfig *quic.Config, template *uritemplate.Template, additionalHeaders http.Header, endpoint *net.UDPAddr) (*net.UDPConn, *http3.Transport, *connectip.Conn, *http.Response, error) {
-	var udpConn *net.UDPConn
+func connectTunnelHTTP3(ctx context.Context, tlsConfig *tls.Config, quicConfig *quic.Config, template *uritemplate.Template, additionalHeaders http.Header, endpoint *net.UDPAddr) (net.PacketConn, *http3.Transport, *connectip.Conn, *http.Response, error) {
+	var udpConn net.PacketConn
 	var err error
+	parent, err := internal.NewParentProxy(config.AppConfig.ParentProxy)
+	if err != nil { return nil, nil, nil, nil, err }
 	if endpoint.IP.To4() == nil {
-		udpConn, err = net.ListenUDP("udp", &net.UDPAddr{
+		udpConn, err = parent.ListenPacket(ctx, "udp", &net.UDPAddr{
 			IP:   net.IPv6zero,
 			Port: 0,
 		})
 	} else {
-		udpConn, err = net.ListenUDP("udp", &net.UDPAddr{
+		udpConn, err = parent.ListenPacket(ctx, "udp", &net.UDPAddr{
 			IP:   net.IPv4zero,
 			Port: 0,
 		})
@@ -236,6 +240,17 @@ func newHTTP2Client(baseTLSConfig *tls.Config, endpoint *net.TCPAddr, connectURI
 
 	tlsConfig := baseTLSConfig.Clone()
 	tlsConfig.NextProtos = []string{"h2"}
+	parent, err := internal.NewParentProxy(config.AppConfig.ParentProxy)
+	if err != nil { return nil, err }
+	if parent != nil {
+		return &http.Client{Transport: &http2.Transport{DialTLSContext: func(ctx context.Context, network, _ string, _ *tls.Config) (net.Conn, error) {
+			conn, err := parent.DialContext(ctx, network, endpoint.String())
+			if err != nil { return nil, err }
+			tlsConn := tls.Client(conn, tlsConfig)
+			if err := tlsConn.HandshakeContext(ctx); err != nil { _ = conn.Close(); return nil, err }
+			return tlsConn, nil
+		}}}, nil
+	}
 
 	if proxyURL == nil {
 		transport := &http2.Transport{

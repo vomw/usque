@@ -22,6 +22,10 @@ type Config struct {
 	AccessToken    string `json:"access_token"`     // Authentication token for API access
 	IPv4           string `json:"ipv4"`             // Assigned IPv4 address
 	IPv6           string `json:"ipv6"`             // Assigned IPv6 address
+	// ParentProxy is an optional SOCKS5 parent for every connection made by usque.
+	// Supported forms are socks5://host:port (local DNS) and socks5h://host:port
+	// (proxy DNS). User info is optional and is used for SOCKS username/password auth.
+	ParentProxy    string `json:"parent_proxy,omitempty"`
 }
 
 // AppConfig holds the global application configuration.
