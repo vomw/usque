@@ -5,7 +5,7 @@ package cmd
 import (
 	"errors"
 
-	"github.com/Diniboy1123/usque/api"
+	"github.com/vomw/usque/api"
 )
 
 var longDescription = "Expose Warp as a native TUN device that accepts any IP traffic." +

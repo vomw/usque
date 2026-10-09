@@ -6,8 +6,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/Diniboy1123/usque/api"
-	"github.com/Diniboy1123/usque/config"
+	"github.com/vomw/usque/api"
+	"github.com/vomw/usque/config"
 	"github.com/spf13/cobra"
 )
 

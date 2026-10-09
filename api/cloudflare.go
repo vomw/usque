@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Diniboy1123/usque/internal"
-	"github.com/Diniboy1123/usque/config"
-	"github.com/Diniboy1123/usque/models"
+	"github.com/vomw/usque/internal"
+	"github.com/vomw/usque/config"
+	"github.com/vomw/usque/models"
 )
 
 // doAPI sends control-plane requests through the configured parent proxy too.

@@ -13,8 +13,8 @@ import (
 
 	quic "github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
-	"github.com/Diniboy1123/usque/config"
-	"github.com/Diniboy1123/usque/internal"
+	"github.com/vomw/usque/config"
+	"github.com/vomw/usque/internal"
 )
 
 const (

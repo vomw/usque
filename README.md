@@ -51,7 +51,7 @@ Usque is an open-source reimplementation of the Cloudflare WARP client's MASQUE 
 
 ## Installation
 
-You can download the latest release from the [releases page](https://github.com/Diniboy1123/usque/releases). For now, Android (`arm64`), Linux (`armv5`, `armv6`, `armv7`, `arm64`, `amd64`), Windows (`arm64`, `amd64`, `386`) and Darwin (`arm64`, `amd64`) binaries are provided. **However only the Linux `amd64` binary was tested.** If you have a different platform, you can build from source.
+You can download the latest release from the [releases page](https://github.com/vomw/usque/releases). For now, Android (`arm64`), Linux (`armv5`, `armv6`, `armv7`, `arm64`, `amd64`), Windows (`arm64`, `amd64`, `386`) and Darwin (`arm64`, `amd64`) binaries are provided. **However only the Linux `amd64` binary was tested.** If you have a different platform, you can build from source.
 
 Extract the archive and you will find a binary named `usque` in the root directory. You can move this binary to a directory in your `PATH` to make it accessible from anywhere.
 
@@ -337,7 +337,7 @@ $ ./usque l4-socks
 
 They support the same bind, port, auth, DNS, and hook flags as the other proxy modes. **For TCP-only workloads, these modes should generally outperform the full proxy stack.**
 
-More details [in the wiki](https://github.com/Diniboy1123/usque/wiki/L4-proxy-mode).
+More details [in the wiki](https://github.com/vomw/usque/wiki/L4-proxy-mode).
 
 ### Port Forwarding Mode (for Advanced Users, cross-platform)
 
@@ -438,7 +438,7 @@ If you prefer PowerShell, keep the hook itself pointed at a small `.bat` stub th
 
 While `usque` was originally designed with a focus on **QUIC** and **HTTP/3**, Cloudflare has since introduced TCP fallback support in their official clients. `usque` now supports this connection method via `--http2`.
 
-For full details and troubleshooting, see the wiki page: [HTTP/2 support](https://github.com/Diniboy1123/usque/wiki/HTTP-2-support).
+For full details and troubleshooting, see the wiki page: [HTTP/2 support](https://github.com/vomw/usque/wiki/HTTP-2-support).
 
 #### HTTP/2 Configuration
 
@@ -603,7 +603,7 @@ While it doesn't exactly solve the reconnect issue yet either, it is planned. An
 
 ## Why did you fork connect-ip-go?
 
-Because Cloudflare's implementation isn't exactly RFC 9484 compliant and it's not going to work without directly monkey patching the library. Find my ugly, but hopefully working version [here](https://github.com/Diniboy1123/connect-ip-go).
+Because Cloudflare's implementation isn't exactly RFC 9484 compliant and it's not going to work without directly monkey patching the library. Find my ugly, but hopefully working version [here](https://github.com/vomw/connect-ip-go).
 
 ## Why the name?
 

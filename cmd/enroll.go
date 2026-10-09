@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Diniboy1123/usque/api"
-	"github.com/Diniboy1123/usque/config"
-	"github.com/Diniboy1123/usque/internal"
-	"github.com/Diniboy1123/usque/models"
+	"github.com/vomw/usque/api"
+	"github.com/vomw/usque/config"
+	"github.com/vomw/usque/internal"
+	"github.com/vomw/usque/models"
 	"github.com/spf13/cobra"
 )
 

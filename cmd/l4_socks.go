@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/Diniboy1123/usque/internal"
+	"github.com/vomw/usque/internal"
 	"github.com/spf13/cobra"
 )
 

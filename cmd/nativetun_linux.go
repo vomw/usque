@@ -7,8 +7,8 @@ import (
 	"log"
 	"net"
 
-	"github.com/Diniboy1123/usque/api"
-	"github.com/Diniboy1123/usque/config"
+	"github.com/vomw/usque/api"
+	"github.com/vomw/usque/config"
 	"github.com/songgao/water"
 	"github.com/vishvananda/netlink"
 )

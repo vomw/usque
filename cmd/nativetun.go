@@ -5,9 +5,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/Diniboy1123/usque/api"
-	"github.com/Diniboy1123/usque/config"
-	"github.com/Diniboy1123/usque/internal"
+	"github.com/vomw/usque/api"
+	"github.com/vomw/usque/config"
+	"github.com/vomw/usque/internal"
 	"github.com/spf13/cobra"
 )
 

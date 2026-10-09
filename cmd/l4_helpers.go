@@ -7,9 +7,9 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/Diniboy1123/usque/api"
-	"github.com/Diniboy1123/usque/config"
-	"github.com/Diniboy1123/usque/internal"
+	"github.com/vomw/usque/api"
+	"github.com/vomw/usque/config"
+	"github.com/vomw/usque/internal"
 	quic "github.com/quic-go/quic-go"
 	"github.com/spf13/cobra"
 )

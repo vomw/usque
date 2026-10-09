@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	HTTP2WikiURL         = "https://github.com/Diniboy1123/usque/wiki/HTTP-2-support"
+	HTTP2WikiURL         = "https://github.com/vomw/usque/wiki/HTTP-2-support"
 	DefaultEndpointH2V4  = "162.159.198.2"
 	DefaultEndpointH2V6  = ""
-	EndpointHelpSuffixH2 = " For details: https://github.com/Diniboy1123/usque/wiki/HTTP-2-support"
+	EndpointHelpSuffixH2 = " For details: https://github.com/vomw/usque/wiki/HTTP-2-support"
 )
 
 // LogHTTP2Endpoint prints the wiki reference and active endpoint when HTTP/2 mode is enabled.

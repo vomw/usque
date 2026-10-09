@@ -241,7 +241,7 @@ Then I went down more on the Java path. I found a library called `libwarp_mobile
 
 You can find `ssl_log_secret()` in there really easily. If you check the [source for BoringSSL](https://github.com/google/boringssl/blob/e056f59c7dfdcf891af03bc7900c946ac485c78f/ssl/ssl_lib.cc#L173), you can see what it does. By looking at xrefs in IDA, I could quickly trace back that it's indeed called in a lot of different places leading to the logging of client secrets. Which means if I can hook into this function, I probably hit the jackpot.
 
-Then I modified the earlier warp_hook.js with the newly learnt information, you can [find it here](https://gist.github.com/Diniboy1123/595202e17214b4ff3ade5aaa8da6b6b2). It even dumped some secrets that looked perfect for me.
+Then I modified the earlier warp_hook.js with the newly learnt information, you can [find it here](https://gist.github.com/vomw/595202e17214b4ff3ade5aaa8da6b6b2). It even dumped some secrets that looked perfect for me.
 
 With that I could have manually assembled a keylogfile for Wireshark to consume. I found a decent draft that explains how it's done [here](https://www.ietf.org/archive/id/draft-thomson-tls-keylogfile-00.html#name-the-sslkeylogfile-format). I had everything, except the `client_random`.
 
@@ -291,7 +291,7 @@ Anyway this was a great learning experience for me both technically as I learnt 
 ## Interesting other CONNECT-IP related projects
 
 - [connect-ip-go](https://github.com/quic-go/connect-ip-go) - A Go implementation of RFC 9484 that uses [quic-go](https://github.com/quic-go/quic-go) for the QUIC part. I found it very easy to read and understand, but it lacks IP Forwarding support as of now.
-- [Google quiche's masque implementation](https://github.com/google/quiche/tree/main/quiche/quic/masque) - Very cool prototype MASQUE implementation with support for `CONNECT-UDP`, `CONNECT-IP` and even `CONNECT-ETHERNET` modes as it was [brought to my attention](https://github.com/Diniboy1123/usque/issues/6). Seems to be a small, yet feature packed codebase with a strong focus on RFC compliance.
+- [Google quiche's masque implementation](https://github.com/google/quiche/tree/main/quiche/quic/masque) - Very cool prototype MASQUE implementation with support for `CONNECT-UDP`, `CONNECT-IP` and even `CONNECT-ETHERNET` modes as it was [brought to my attention](https://github.com/vomw/usque/issues/6). Seems to be a small, yet feature packed codebase with a strong focus on RFC compliance.
 - [masquerade](https://github.com/ErikBcd/masquerade) - Awesome stuff on top of the original [project](https://github.com/jromwu/masquerade) extending it with `CONNECT-IP` support. Comes with both a server and a client both written in Rust. Great practical example that relies on Cloudflare's quiche for the QUIC part.
 
 ## Interesting other QUIC related projects
