@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"strings"
 
-	connectip "github.com/vomw/connect-ip-go"
+	connectip "github.com/Diniboy1123/connect-ip-go"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
 	"github.com/vomw/usque/config"

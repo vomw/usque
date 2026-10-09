@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	connectip "github.com/vomw/connect-ip-go"
+	connectip "github.com/Diniboy1123/connect-ip-go"
 	"github.com/vomw/usque/internal"
 	"github.com/songgao/water"
 	"golang.zx2c4.com/wireguard/tun"
